@@ -59,22 +59,23 @@ const ExerciseSession = () => {
           if (prev <= 1) {
             // Phase completed
             if (phase === 'contract') {
-              // Contract phase completed
+              // Contract phase completed - switch to relax phase
+              setPhase('relax')
+              return exercise?.relaxTime || 0
+            } else {
+              // Relax phase completed - increment rep counter
+              const nextRep = currentRep + 1
+              
               // Check if all reps are completed
-              if (currentRep >= (exercise?.repetitions || 0)) {
+              if (nextRep > (exercise?.repetitions || 0)) {
                 // Exercise completed
                 clearInterval(timerRef.current!)
                 setIsCompleted(true)
                 return 0
               }
               
-              // Switch to relax phase
-              setPhase('relax')
-              return exercise?.relaxTime || 0
-            } else {
-              // Relax phase completed
               // Move to next rep
-              setCurrentRep(prev => prev + 1)
+              setCurrentRep(nextRep)
               // Switch back to contract phase
               setPhase('contract')
               return exercise?.contractTime || 0
@@ -129,18 +130,22 @@ const ExerciseSession = () => {
   
   const skipPhase = () => {
     if (phase === 'contract') {
-      // Check if this is the last rep
-      if (currentRep >= (exercise?.repetitions || 0)) {
+      // Skip to relax phase
+      setPhase('relax')
+      setTimeLeft(exercise?.relaxTime || 0)
+    } else {
+      // Skip to next rep
+      const nextRep = currentRep + 1
+      
+      // Check if this was the last rep
+      if (nextRep > (exercise?.repetitions || 0)) {
         setIsCompleted(true)
       } else {
-        setPhase('relax')
-        setTimeLeft(exercise?.relaxTime || 0)
+        // Move to next rep
+        setCurrentRep(nextRep)
+        setPhase('contract')
+        setTimeLeft(exercise?.contractTime || 0)
       }
-    } else {
-      // After relax phase, increment rep counter
-      setCurrentRep(prev => prev + 1)
-      setPhase('contract')
-      setTimeLeft(exercise?.contractTime || 0)
     }
   }
   
