@@ -63,7 +63,7 @@ const ExerciseSession = () => {
               setPhase('relax')
               return exercise?.relaxTime || 0
             } else {
-              // Relax phase completed
+              // Relax phase completed - this completes one full rep
               if (currentRep >= (exercise?.repetitions || 0)) {
                 // Exercise completed
                 clearInterval(timerRef.current!)
@@ -216,7 +216,7 @@ const ExerciseSession = () => {
                           ? 'bg-blue-100 dark:bg-blue-900/50' 
                           : 'bg-purple-100 dark:bg-purple-900/50'}`}
                       animate={{
-                        scale: phase === 'contract' ? [1, 0.9, 0.8] : [0.8, 0.9, 1],
+                        scale: phase === 'contract' ? [1, 0.8] : [0.8, 1],
                       }}
                       transition={{
                         duration: 1,
