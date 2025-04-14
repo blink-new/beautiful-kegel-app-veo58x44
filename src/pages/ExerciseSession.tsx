@@ -22,7 +22,7 @@ const ExerciseSession = () => {
   const [exercise, setExercise] = useState<Exercise | null>(null)
   const [isActive, setIsActive] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
-  const [currentRep, setCurrentRep] = useState(0) // Start at 0, increment after contract phase
+  const [currentRep, setCurrentRep] = useState(1) // Start at 1
   const [phase, setPhase] = useState<'contract' | 'relax'>('contract')
   const [timeLeft, setTimeLeft] = useState(0)
   const [totalTime, setTotalTime] = useState(0)
@@ -59,11 +59,9 @@ const ExerciseSession = () => {
           if (prev <= 1) {
             // Phase completed
             if (phase === 'contract') {
-              // Contract phase completed - increment rep counter
-              setCurrentRep(prev => prev + 1)
-              
+              // Contract phase completed
               // Check if all reps are completed
-              if (currentRep + 1 >= (exercise?.repetitions || 0)) {
+              if (currentRep >= (exercise?.repetitions || 0)) {
                 // Exercise completed
                 clearInterval(timerRef.current!)
                 setIsCompleted(true)
@@ -75,6 +73,8 @@ const ExerciseSession = () => {
               return exercise?.relaxTime || 0
             } else {
               // Relax phase completed
+              // Move to next rep
+              setCurrentRep(prev => prev + 1)
               // Switch back to contract phase
               setPhase('contract')
               return exercise?.contractTime || 0
@@ -129,16 +129,16 @@ const ExerciseSession = () => {
   
   const skipPhase = () => {
     if (phase === 'contract') {
-      // Increment rep when skipping contract phase
-      setCurrentRep(prev => prev + 1)
-      
-      if (currentRep + 1 >= (exercise?.repetitions || 0)) {
+      // Check if this is the last rep
+      if (currentRep >= (exercise?.repetitions || 0)) {
         setIsCompleted(true)
       } else {
         setPhase('relax')
         setTimeLeft(exercise?.relaxTime || 0)
       }
     } else {
+      // After relax phase, increment rep counter
+      setCurrentRep(prev => prev + 1)
       setPhase('contract')
       setTimeLeft(exercise?.contractTime || 0)
     }
@@ -147,7 +147,7 @@ const ExerciseSession = () => {
   const resetExercise = () => {
     setIsActive(false)
     setIsPaused(false)
-    setCurrentRep(0) // Start at 0
+    setCurrentRep(1) // Start at 1
     setPhase('contract')
     setTimeLeft(exercise?.contractTime || 0)
     setElapsedTime(0)
@@ -165,9 +165,6 @@ const ExerciseSession = () => {
     const total = phase === 'contract' ? exercise.contractTime : exercise.relaxTime
     return ((total - timeLeft) / total) * 100
   }
-  
-  // Display rep count (add 1 for display since we start at 0)
-  const displayRep = Math.min(currentRep + 1, exercise?.repetitions || 0)
   
   if (!exercise) {
     return <div>Loading...</div>
@@ -194,7 +191,7 @@ const ExerciseSession = () => {
               <div>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Progress</p>
                 <p className="text-lg font-medium">
-                  {displayRep} of {exercise.repetitions} reps
+                  {currentRep} of {exercise.repetitions} reps
                 </p>
               </div>
               <div className="text-right">
