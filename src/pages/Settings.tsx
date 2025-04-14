@@ -9,7 +9,7 @@ import { Slider } from '../components/ui/slider'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '../components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { motion } from 'framer-motion'
-import { Plus, Edit, Trash2, Save, Clock, Dumbbell, Settings2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, Clock, Dumbbell, Settings2, Sun, Moon } from 'lucide-react'
 import { useToast } from '../hooks/use-toast'
 
 const Settings = () => {
