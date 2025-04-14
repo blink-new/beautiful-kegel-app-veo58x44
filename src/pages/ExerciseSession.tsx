@@ -22,7 +22,7 @@ const ExerciseSession = () => {
   const [exercise, setExercise] = useState<Exercise | null>(null)
   const [isActive, setIsActive] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
-  const [currentRep, setCurrentRep] = useState(1)
+  const [currentRep, setCurrentRep] = useState(0) // Start at 0, increment after contract phase
   const [phase, setPhase] = useState<'contract' | 'relax'>('contract')
   const [timeLeft, setTimeLeft] = useState(0)
   const [totalTime, setTotalTime] = useState(0)
@@ -59,22 +59,25 @@ const ExerciseSession = () => {
           if (prev <= 1) {
             // Phase completed
             if (phase === 'contract') {
-              // Switch to relax phase
-              setPhase('relax')
-              return exercise?.relaxTime || 0
-            } else {
-              // Relax phase completed - this completes one full rep
-              if (currentRep >= (exercise?.repetitions || 0)) {
+              // Contract phase completed - increment rep counter
+              setCurrentRep(prev => prev + 1)
+              
+              // Check if all reps are completed
+              if (currentRep + 1 >= (exercise?.repetitions || 0)) {
                 // Exercise completed
                 clearInterval(timerRef.current!)
                 setIsCompleted(true)
                 return 0
-              } else {
-                // Move to next rep
-                setCurrentRep(prev => prev + 1)
-                setPhase('contract')
-                return exercise?.contractTime || 0
               }
+              
+              // Switch to relax phase
+              setPhase('relax')
+              return exercise?.relaxTime || 0
+            } else {
+              // Relax phase completed
+              // Switch back to contract phase
+              setPhase('contract')
+              return exercise?.contractTime || 0
             }
           }
           return prev - 1
@@ -126,23 +129,25 @@ const ExerciseSession = () => {
   
   const skipPhase = () => {
     if (phase === 'contract') {
-      setPhase('relax')
-      setTimeLeft(exercise?.relaxTime || 0)
-    } else {
-      if (currentRep >= (exercise?.repetitions || 0)) {
+      // Increment rep when skipping contract phase
+      setCurrentRep(prev => prev + 1)
+      
+      if (currentRep + 1 >= (exercise?.repetitions || 0)) {
         setIsCompleted(true)
       } else {
-        setCurrentRep(prev => prev + 1)
-        setPhase('contract')
-        setTimeLeft(exercise?.contractTime || 0)
+        setPhase('relax')
+        setTimeLeft(exercise?.relaxTime || 0)
       }
+    } else {
+      setPhase('contract')
+      setTimeLeft(exercise?.contractTime || 0)
     }
   }
   
   const resetExercise = () => {
     setIsActive(false)
     setIsPaused(false)
-    setCurrentRep(1)
+    setCurrentRep(0) // Start at 0
     setPhase('contract')
     setTimeLeft(exercise?.contractTime || 0)
     setElapsedTime(0)
@@ -160,6 +165,9 @@ const ExerciseSession = () => {
     const total = phase === 'contract' ? exercise.contractTime : exercise.relaxTime
     return ((total - timeLeft) / total) * 100
   }
+  
+  // Display rep count (add 1 for display since we start at 0)
+  const displayRep = Math.min(currentRep + 1, exercise?.repetitions || 0)
   
   if (!exercise) {
     return <div>Loading...</div>
@@ -186,7 +194,7 @@ const ExerciseSession = () => {
               <div>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Progress</p>
                 <p className="text-lg font-medium">
-                  {currentRep} of {exercise.repetitions} reps
+                  {displayRep} of {exercise.repetitions} reps
                 </p>
               </div>
               <div className="text-right">
@@ -210,45 +218,50 @@ const ExerciseSession = () => {
                   className="space-y-8"
                 >
                   <div className="flex flex-col items-center justify-center py-8">
-                    <motion.div 
-                      className={`relative w-48 h-48 rounded-full flex items-center justify-center 
-                        ${phase === 'contract' 
-                          ? 'bg-blue-100 dark:bg-blue-900/50' 
-                          : 'bg-purple-100 dark:bg-purple-900/50'}`}
-                      animate={{
-                        scale: phase === 'contract' ? [1, 0.8] : [0.8, 1],
-                      }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        repeatType: "reverse",
-                      }}
-                    >
-                      <svg className="absolute inset-0" width="100%" height="100%" viewBox="0 0 100 100">
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="45"
-                          fill="none"
-                          stroke={phase === 'contract' ? '#3b82f6' : '#8b5cf6'}
-                          strokeWidth="4"
-                          strokeDasharray="283"
-                          strokeDashoffset={283 - (283 * getPhaseProgressPercentage()) / 100}
-                          transform="rotate(-90 50 50)"
-                          className="transition-all duration-300 ease-linear"
-                        />
-                      </svg>
-                      <div className="text-center">
-                        <h2 className="text-5xl font-bold mb-2">{timeLeft}</h2>
-                        <p className={`text-lg font-medium ${
-                          phase === 'contract' 
-                            ? 'text-blue-600 dark:text-blue-400' 
-                            : 'text-purple-600 dark:text-purple-400'
-                        }`}>
-                          {phase === 'contract' ? 'CONTRACT' : 'RELAX'}
-                        </p>
-                      </div>
-                    </motion.div>
+                    {/* Static circle that changes size based on phase */}
+                    <div className="relative w-48 h-48">
+                      <motion.div 
+                        className={`absolute inset-0 rounded-full flex items-center justify-center 
+                          ${phase === 'contract' 
+                            ? 'bg-blue-100 dark:bg-blue-900/50' 
+                            : 'bg-purple-100 dark:bg-purple-900/50'}`}
+                        animate={{
+                          scale: phase === 'contract' ? 0.8 : 1
+                        }}
+                        initial={{
+                          scale: phase === 'contract' ? 1 : 0.8
+                        }}
+                        transition={{
+                          duration: 0.5,
+                          ease: "easeInOut"
+                        }}
+                      >
+                        <svg className="absolute inset-0" width="100%" height="100%" viewBox="0 0 100 100">
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            fill="none"
+                            stroke={phase === 'contract' ? '#3b82f6' : '#8b5cf6'}
+                            strokeWidth="4"
+                            strokeDasharray="283"
+                            strokeDashoffset={283 - (283 * getPhaseProgressPercentage()) / 100}
+                            transform="rotate(-90 50 50)"
+                            className="transition-all duration-300 ease-linear"
+                          />
+                        </svg>
+                        <div className="text-center">
+                          <h2 className="text-5xl font-bold mb-2">{timeLeft}</h2>
+                          <p className={`text-lg font-medium ${
+                            phase === 'contract' 
+                              ? 'text-blue-600 dark:text-blue-400' 
+                              : 'text-purple-600 dark:text-purple-400'
+                          }`}>
+                            {phase === 'contract' ? 'CONTRACT' : 'RELAX'}
+                          </p>
+                        </div>
+                      </motion.div>
+                    </div>
                   </div>
                   
                   <div className="flex justify-center space-x-4">
