@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Calendar, Flame, Award, Clock, Dumbbell } from 'lucide-react'
+import WeeklyProgressChart from '../components/WeeklyProgressChart'
 
 const Dashboard = () => {
   const { exercises, streakDays, totalSessions, lastSessionDate } = useKegel()
@@ -103,6 +104,14 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </motion.div>
+      </motion.div>
+
+      <motion.div 
+        variants={item}
+        initial="hidden"
+        animate="show"
+      >
+        <WeeklyProgressChart />
       </motion.div>
 
       <motion.div 
