@@ -6,14 +6,17 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Progress } from '../components/ui/progress'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Pause, SkipForward, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { Play, Pause, SkipForward, ArrowLeft, CheckCircle2, Timer } from 'lucide-react'
 import { useToast } from '../hooks/use-toast'
+import Confetti from 'react-confetti'
+import { useWindowSize } from 'react-use'
 
 const ExerciseSession = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { toast } = useToast()
   const { getExerciseById, addSession } = useKegel()
+  const { width, height } = useWindowSize()
   
   // Get exercise ID from URL params
   const params = new URLSearchParams(location.search)
@@ -28,6 +31,7 @@ const ExerciseSession = () => {
   const [totalTime, setTotalTime] = useState(0)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
   
   const timerRef = useRef<number | null>(null)
   const startTimeRef = useRef<number | null>(null)
@@ -71,6 +75,7 @@ const ExerciseSession = () => {
                 // Exercise completed
                 clearInterval(timerRef.current!)
                 setIsCompleted(true)
+                setShowConfetti(true)
                 return 0
               }
               
@@ -116,6 +121,11 @@ const ExerciseSession = () => {
         title: "Exercise Completed!",
         description: `Great job! You've completed ${exercise.repetitions} repetitions.`,
       })
+      
+      // Hide confetti after 5 seconds
+      setTimeout(() => {
+        setShowConfetti(false)
+      }, 5000)
     }
   }, [isCompleted, exercise, addSession, toast])
   
@@ -140,6 +150,7 @@ const ExerciseSession = () => {
       // Check if this was the last rep
       if (nextRep > (exercise?.repetitions || 0)) {
         setIsCompleted(true)
+        setShowConfetti(true)
       } else {
         // Move to next rep
         setCurrentRep(nextRep)
@@ -172,11 +183,41 @@ const ExerciseSession = () => {
   }
   
   if (!exercise) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center">
+          <div className="relative w-16 h-16">
+            <motion.div 
+              className="absolute inset-0 rounded-full bg-blue-100 dark:bg-blue-900/50"
+              animate={{ scale: [1, 0.8, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+            <motion.div 
+              className="absolute inset-0 flex items-center justify-center"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            >
+              <Timer className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            </motion.div>
+          </div>
+          <p className="mt-4 text-slate-600 dark:text-slate-300">Loading exercise...</p>
+        </div>
+      </div>
+    )
   }
   
   return (
     <div className="space-y-6">
+      {showConfetti && (
+        <Confetti
+          width={width}
+          height={height}
+          recycle={false}
+          numberOfPieces={200}
+          gravity={0.15}
+        />
+      )}
+      
       <div className="flex items-center">
         <Button 
           variant="ghost" 
@@ -189,8 +230,9 @@ const ExerciseSession = () => {
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{exercise.name}</h1>
       </div>
       
-      <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700">
-        <CardContent className="pt-6 pb-6">
+      <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 overflow-hidden relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-100/50 to-transparent dark:from-slate-800/30 dark:to-transparent" />
+        <CardContent className="pt-6 pb-6 relative">
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
@@ -208,7 +250,15 @@ const ExerciseSession = () => {
               </div>
             </div>
             
-            <Progress value={getProgressPercentage()} className="h-2" />
+            <div className="relative h-2">
+              <Progress value={getProgressPercentage()} className="h-2" />
+              <motion.div 
+                className="absolute top-0 h-2 w-2 rounded-full bg-white border-2 border-blue-500"
+                style={{ left: `${getProgressPercentage()}%` }}
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+            </div>
             
             <AnimatePresence mode="wait">
               {!isCompleted ? (
@@ -252,9 +302,28 @@ const ExerciseSession = () => {
                             className="transition-all duration-300 ease-linear"
                           />
                         </svg>
-                        <div className="text-center">
+                        
+                        {/* Pulsing effect */}
+                        <motion.div 
+                          className={`absolute inset-0 rounded-full ${
+                            phase === 'contract' 
+                              ? 'bg-blue-500/20 dark:bg-blue-500/30' 
+                              : 'bg-purple-500/20 dark:bg-purple-500/30'
+                          }`}
+                          animate={{ 
+                            scale: phase === 'contract' ? [0.8, 0.9, 0.8] : [1, 1.1, 1],
+                            opacity: [0.5, 0.7, 0.5]
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            repeatType: "reverse"
+                          }}
+                        />
+                        
+                        <div className="text-center z-10">
                           <h2 className="text-5xl font-bold mb-2">{timeLeft}</h2>
-                          <p className={`text-lg font-medium ${
+                          <p className={`text-lg font-medium ${ 
                             phase === 'contract' 
                               ? 'text-blue-600 dark:text-blue-400' 
                               : 'text-purple-600 dark:text-purple-400'
@@ -271,7 +340,7 @@ const ExerciseSession = () => {
                       variant="outline" 
                       size="icon"
                       onClick={resetExercise}
-                      className="rounded-full h-12 w-12"
+                      className="rounded-full h-12 w-12 border-slate-300 dark:border-slate-600"
                     >
                       <ArrowLeft className="h-5 w-5" />
                     </Button>
@@ -287,7 +356,7 @@ const ExerciseSession = () => {
                       {isActive && !isPaused ? (
                         <Pause className="h-6 w-6" />
                       ) : (
-                        <Play className="h-6 w-6" />
+                        <Play className="h-6 w-6 ml-1" />
                       )}
                     </Button>
                     
@@ -295,7 +364,7 @@ const ExerciseSession = () => {
                       variant="outline" 
                       size="icon"
                       onClick={skipPhase}
-                      className="rounded-full h-12 w-12"
+                      className="rounded-full h-12 w-12 border-slate-300 dark:border-slate-600"
                     >
                       <SkipForward className="h-5 w-5" />
                     </Button>
@@ -309,11 +378,23 @@ const ExerciseSession = () => {
                   className="flex flex-col items-center justify-center py-8 space-y-6"
                 >
                   <motion.div 
-                    className="bg-green-100 dark:bg-green-900/50 w-32 h-32 rounded-full flex items-center justify-center"
+                    className="bg-green-100 dark:bg-green-900/50 w-32 h-32 rounded-full flex items-center justify-center relative"
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{ duration: 1, repeat: Infinity }}
                   >
-                    <CheckCircle2 className="h-16 w-16 text-green-600 dark:text-green-400" />
+                    <motion.div 
+                      className="absolute inset-0 rounded-full bg-green-500/20 dark:bg-green-500/30 blur-md"
+                      animate={{ 
+                        scale: [1, 1.2, 1],
+                        opacity: [0.5, 0.8, 0.5]
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatType: "reverse"
+                      }}
+                    />
+                    <CheckCircle2 className="h-16 w-16 text-green-600 dark:text-green-400 z-10" />
                   </motion.div>
                   
                   <div className="text-center">
@@ -346,26 +427,39 @@ const ExerciseSession = () => {
         </CardContent>
       </Card>
       
-      <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700">
-        <CardContent className="pt-6">
+      <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 overflow-hidden relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-100/50 to-transparent dark:from-slate-800/30 dark:to-transparent" />
+        <CardContent className="pt-6 relative">
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Exercise Details</h3>
             
             <div className="grid grid-cols-3 gap-4">
-              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg text-center">
+              <motion.div 
+                className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg text-center"
+                whileHover={{ y: -5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
                 <p className="text-sm text-slate-500 dark:text-slate-400">Contract</p>
                 <p className="text-lg font-medium">{exercise.contractTime}s</p>
-              </div>
+              </motion.div>
               
-              <div className="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg text-center">
+              <motion.div 
+                className="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg text-center"
+                whileHover={{ y: -5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
                 <p className="text-sm text-slate-500 dark:text-slate-400">Relax</p>
                 <p className="text-lg font-medium">{exercise.relaxTime}s</p>
-              </div>
+              </motion.div>
               
-              <div className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg text-center">
+              <motion.div 
+                className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg text-center"
+                whileHover={{ y: -5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
                 <p className="text-sm text-slate-500 dark:text-slate-400">Reps</p>
                 <p className="text-lg font-medium">{exercise.repetitions}</p>
-              </div>
+              </motion.div>
             </div>
           </div>
         </CardContent>

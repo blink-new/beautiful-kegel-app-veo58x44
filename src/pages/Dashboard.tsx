@@ -4,12 +4,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Calendar, Flame, Award, Clock, Dumbbell } from 'lucide-react'
+import { Calendar, Flame, Award, Clock, Dumbbell, ChevronRight } from 'lucide-react'
 import WeeklyProgressChart from '../components/WeeklyProgressChart'
+import { useAchievements } from '../context/AchievementsContext'
+import AchievementBadge from '../components/AchievementBadge'
 
 const Dashboard = () => {
   const { exercises, streakDays, totalSessions, lastSessionDate } = useKegel()
-
+  const { achievements } = useAchievements()
+  
+  const recentAchievements = achievements
+    .filter(a => a.unlocked)
+    .slice(-3)
+    .reverse()
+  
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never'
     const date = new Date(dateString)
@@ -113,6 +121,42 @@ const Dashboard = () => {
       >
         <WeeklyProgressChart />
       </motion.div>
+
+      {recentAchievements.length > 0 && (
+        <motion.div 
+          variants={item}
+          initial="hidden"
+          animate="show"
+        >
+          <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-amber-100 dark:border-amber-900 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-100/50 to-transparent dark:from-amber-900/20 dark:to-transparent" />
+            <CardHeader className="pb-2 relative">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg flex items-center">
+                  <Award className="h-5 w-5 mr-2 text-amber-600 dark:text-amber-400" />
+                  Recent Achievements
+                </CardTitle>
+                <Link to="/achievements" className="text-sm text-blue-600 dark:text-blue-400 flex items-center">
+                  View All
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="relative">
+              <div className="flex justify-around py-2">
+                {recentAchievements.map(achievement => (
+                  <AchievementBadge 
+                    key={achievement.id} 
+                    achievement={achievement} 
+                    size="sm"
+                    showProgress={false}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       <motion.div 
         variants={item}
